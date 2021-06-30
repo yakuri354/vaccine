@@ -1,0 +1,3 @@
+flask
+pytelegrambotapi
+qrcode[pil]
