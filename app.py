@@ -2,63 +2,27 @@ import sqlite3
 import qrcode
 from flask import Flask, render_template, redirect, request, abort, url_for, send_file
 from io import BytesIO
-from urllib.parse import urlparse
-import pymongo as pm
-
-def get_db():
-	return MongoClient("")
-
+from urllib.parse import urlparse, urlencode
 app = Flask(__name__)
 
-key = "IM33PMja2w40tGxo60TvgTCq2QWwHdEZ"
-
-def inject(path):
+def inject(name, doc, date):
 	base = urlparse(request.url_root)
-	return f"{base.scheme}://{base.netloc}\\\\\\\\@immune.mos.ru/{base.path}/{path}{'?' + base.query if base.query is not None else ''}"
+	return f"{base.scheme}://{base.netloc}\\\\\\\\@immune.mos.ru/d?" + urlencode({"name": name, "doc": doc, "date": date})
 
-cur = get_db().cursor()
-cur.execute("""
-create table if not exists certs (
-	id text primary key,
-	name text,
-	doc text,
-	date text
-)
-""")
-
-def create_qr(guid):
-	qr = qrcode.make(inject(url_for('get', guid=guid)))
+def create_qr(name, doc, date):
+	qr = qrcode.make(inject(name, doc, date))
 	io = BytesIO()
 	qr.save(io, "JPEG", quality=70)
 	io.seek(0)
 	return io
 
-@app.route("/i", methods=['POST'])
-def set():
-	json = request.json
-	if json["key"] != key:
-		abort(500)
-	db = get_db()
-	cur = db.cursor()
-	cur.execute("select * from certs where id=:guid", {'guid': json['id']})
-	if cur.fetchone() is not None:
-		abort(409)
-	cur.execute("insert into certs (id, name, doc, date) values (?, ?, ?, ?)", (json['id'], json['name'], json['doc'], json['date']))
-	db.commit()
-	return send_file(create_qr(json['id']), mimetype='image/jpeg')
+@app.route("/g", methods = ['POST'])
+def gen():
+	return send_file(create_qr(request.json["name"], request.json["doc"], request.json["date"]), mimetype='image/jpeg')
 
-@app.route("/g/<guid>")
-def gen(guid):
-	return send_file(create_qr(guid), mimetype='image/jpeg')
-
-@app.route("/<path:p>/<guid>")
-def get(guid, p=""):
-	cur = get_db().cursor()
-	cur.execute("select * from certs where id=:guid", {'guid': guid})
-	rec = cur.fetchone()
-	if rec is None:
-		return redirect("https://www.gosuslugi.ru/vaccine/cert/verify/" + guid, code=302) 
-	return render_template("page.html", name=rec[1], doc=rec[2], date=rec[3])
+@app.route("/<path:path>/d")
+def get(path=""):
+	return render_template("page.html", name=request.args.get("name"), doc=request.args.get("doc"), date=request.args.get("date"))
 
 @app.route("/", defaults={'path': ""})
 @app.route("/<path:path>")
