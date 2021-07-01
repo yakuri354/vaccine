@@ -7,7 +7,7 @@ app = Flask(__name__)
 
 def inject(name, doc, date):
 	base = urlparse(request.url_root)
-	return f"{base.scheme}://{base.netloc}\\\\\\\\@www.gosuslugi.ru/vaccine/cert/verify/https://www.gosuslugi.ru/vaccine/cert/verify/" + urlencode({"name": name, "doc": doc, "date": date})
+	return f"{base.scheme}://{base.netloc}\\\\\\\\@www.gosuslugi.ru/vaccine/cert/verify/https://www.gosuslugi.ru/vaccine/cert/verify/d" + urlencode({"name": name, "doc": doc, "date": date})
 	#return f"{base.scheme}://{base.netloc}\\\\\\\\@immune.mos.ru/d?" + urlencode({"name": name, "doc": doc, "date": date})
 
 def create_qr(name, doc, date):
