@@ -1,7 +1,6 @@
 flask
 qrcode[pil]
 gunicorn
-json
 pycryptodome
 base64
 hashlib
